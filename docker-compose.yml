@@ -1,0 +1,8 @@
+version: "0.1"
+services:
+  dev:
+    build:
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - .:/afl_probabilistic_model
