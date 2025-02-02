@@ -1,6 +1,6 @@
 from unittest.mock import patch
 # TODO: fix import *
-from fetch_season_info import *
+from afl_api import *
 
 TEST_RESPONSE = {
   "meta": {
@@ -37,7 +37,7 @@ TEST_RESPONSE = {
   ]
 }
 
-@patch("fetch_season_info._fetch_season_info")
+@patch("afl_api._fetch_season_info")
 def test_fetch_season_id(fetch_season_info_mock):
     fetch_season_info_mock.return_value = TEST_RESPONSE
     result = fetch_season_id(2025)
