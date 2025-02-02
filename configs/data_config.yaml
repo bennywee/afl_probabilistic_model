@@ -1,0 +1,6 @@
+raw_ladder:
+  ladder_data_loc: "data/raw/ladder"
+  year_lb: 1990
+  year_ub: 2024
+  round_lb: 1
+  round_ub: 24
