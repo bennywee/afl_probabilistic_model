@@ -4,5 +4,6 @@ services:
     build:
       dockerfile: Dockerfile
       target: dev
+    cpus: 8
     volumes:
       - .:/afl_probabilistic_model
