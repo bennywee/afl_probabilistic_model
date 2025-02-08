@@ -20,6 +20,6 @@ rounds = rep(round_vector, length(year_vector))
 
 future.apply::future_Map(function(x, y) 
                          tryCatch(scrape_ladder(season = x, round = y, path = data_output_loc), 
-                         error = function(e) NULL),
+                         error = function(e){print(e); return(NULL)}),
                          x = years, y = rounds)
  
