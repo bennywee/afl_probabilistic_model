@@ -11,6 +11,6 @@ scrape_ladder <- function(season, round, path) {
                              format = "parquet",
                              path = path, 
                              partitioning = "Season",
-                             existing_data_behavior = "error")
+                             existing_data_behavior = "overwrite")
     }
 }
