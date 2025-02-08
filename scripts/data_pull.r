@@ -1,7 +1,7 @@
 source("R/data_scrape.r")
 
 config <- yaml::read_yaml("configs/data_config.yaml")[["raw_ladder"]]
-git_branch <- system("git rev-parse --abbrev-ref HEAD")
+git_branch <- system("git rev-parse --abbrev-ref HEAD", intern = TRUE)
 env <- if(git_branch == "main") "prod" else "dev"
 
 year_vector = config[["year_lb"]]:config[["year_ub"]]
