@@ -16,7 +16,14 @@ def fetch_season_id(year):
     # TODO: validate that exactly one result here?
     return matching_comp_seasons[0]['id']
 
+def _fetch_round_info(round_number, season_id):
+    url = f"https://aflapi.afl.com.au/afl/v2/compseasons/{season_id}/rounds"
+    result = requests.get(url)
+    return result.json()
+
 if __name__ == "__main__":
-    result = _fetch_season_info()
-    print(result)
+    import pprint
+    #result = _fetch_season_info()
+    result = _fetch_round_info(0, 73)
+    pprint.pp(result)
     
