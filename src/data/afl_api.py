@@ -21,6 +21,12 @@ def _fetch_round_info(round_number, season_id):
     result = requests.get(url)
     return result.json()
 
+# Implementing this function, sans future functionality
+# https://github.com/jimmyday12/fitzRoy/blob/006ebef7bc7d892aa8b999278ea460898c19200d/R/helpers-afl.R#L271
+def fetch_round_id(round_number, year):
+    raise NotImplementedError
+
+
 if __name__ == "__main__":
     import pprint
     #result = _fetch_season_info()
