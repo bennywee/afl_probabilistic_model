@@ -8,7 +8,7 @@ year_vector = config[["year_lb"]]:config[["year_ub"]]
 round_vector = config[["round_lb"]]:config[["round_ub"]]
 data_output_loc = paste0("data/", env, "/", config[["ladder_data_loc"]])
 
-available_cores = parallel::detectCores()
+available_cores = parallel::detectCores()-1
 future::plan(future::multisession, workers = available_cores)
 
 if(!dir.exists(data_output_loc)){
