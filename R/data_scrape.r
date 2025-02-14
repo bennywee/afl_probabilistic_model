@@ -14,7 +14,18 @@ scrape_write_ladder <- function(season, rounds, output_path) {
                          error = function(e){print(e); return(NULL)}),
                          x = season, y = rounds)
 
-    df <- do.call(rbind, data_ls)
+    df <- do.call(rbind, data_ls) |>
+        arrow::arrow_table(schema = arrow::schema(
+            Season = arrow::int32(),
+            Team = arrow::string(),
+            Round.Number = arrow::int32(),
+            Season.Points = arrow::int32(),
+            Score.For = arrow::int32(),
+            Score.Against = arrow::int32(),
+            Percentage = arrow::float64(),
+            Ladder.Position = arrow::int32()
+        )
+    )
 
     arrow::write_dataset(dataset = df, 
                          format = "parquet",
