@@ -1,6 +1,14 @@
-raw_ladder:
-  ladder_data_loc: "raw/ladder"
-  year_lb: 2024
-  year_ub: 2024
-  round_lb: 1
-  round_ub: 5
+raw_data_scrape:
+  tables: ["ladder", "results"]
+  ladder:
+    data_loc: "raw/ladder"
+    year_lb: 2024
+    year_ub: 2024
+    round_lb: 1
+    round_ub: 5
+  results:
+    data_loc: "raw/results"
+    year_lb: 2024
+    year_ub: 2024
+    round_lb: 1
+    round_ub: 5
