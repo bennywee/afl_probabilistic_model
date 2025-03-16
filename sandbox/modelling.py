@@ -1,9 +1,10 @@
 import polars as pl
 import pymc as pm
+import numpy as np
 import arviz as az
 
-ladder_path = "data/prod/raw/ladder"
-results_path = "data/prod/raw/results"
+ladder_path = "data/dev/raw/ladder"
+results_path = "data/dev/raw/results"
 
 ladder = pl.scan_parquet(ladder_path).collect()
 results = pl.scan_parquet(results_path).collect()
@@ -40,7 +41,7 @@ feature_df = (results_df.join(main_features,
                        "prev_Percentage": "away_team_prev_percentage"})
 )
 
-predict_round = (2024, 5)
+predict_round = (2025, 1)
 test_year = (pl.col("Season") == predict_round[0]) 
 test_round =(pl.col("Round.Number") == predict_round[1])
 
@@ -76,11 +77,17 @@ with pm.Model(coords=coords) as model:
     idata = pm.sample(random_seed=123)
 
 az.plot_trace(idata, var_names="b", compact=False);
+az.summary(idata, var_names="a")
+az.summary(idata, var_names="b")
 
 with model:
     pm.set_data({"X": x_test, "y": y_test})
     idata.extend(pm.sample_posterior_predictive(idata))
 
+def logistic(p):
+    return 1/(1+np.e**(-p))
+
 p_test_pred = idata.posterior_predictive["obs"].mean(dim=["chain", "draw"])
 p_test_pred.to_numpy()
 
+logistic(0.218)
