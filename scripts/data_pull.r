@@ -30,3 +30,16 @@ scrape_table_data <- function(config, table_name) {
 Map(function(t) 
     scrape_table_data(config = config, table_name = t),
     t = tables)
+
+# Get 2025 fixture data
+fixture_loc <- paste0("data/", env, "/raw/fixture")
+
+if(!dir.exists(fixture_loc)){
+    dir.create(fixture_loc, recursive = TRUE)
+}
+
+fitzRoy::fetch_fixture_footywire(
+  season = 2025
+) |> 
+arrow::write_dataset(format = "parquet",
+                     path = fixture_loc)
