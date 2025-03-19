@@ -5,9 +5,14 @@ import arviz as az
 
 ladder_path = "data/dev/raw/ladder"
 results_path = "data/dev/raw/results"
+fixture_path = "data/prod/raw/fixture"
+predict_round = (2025, 2)
 
 ladder = pl.scan_parquet(ladder_path).collect()
 results = pl.scan_parquet(results_path).collect()
+fixture = pl.scan_parquet(fixture_path).collect()\
+            .select("Round", "Home.Team", "Away.Team")\
+            .with_columns(Round = pl.col("Round") - 1)
 
 results_df = (results.with_columns(
         pl.when(pl.col("Home.Points") > pl.col("Away.Points"))
@@ -39,19 +44,30 @@ feature_df = (results_df.join(main_features,
                 coalesce=True)
               .rename({"Percentage": "away_team_percentage",
                        "prev_Percentage": "away_team_prev_percentage"})
+              .with_columns(Round = pl.col("Round.Number") - 1)
+
 )
 
-predict_round = (2025, 1)
 test_year = (pl.col("Season") == predict_round[0]) 
-test_round =(pl.col("Round.Number") == predict_round[1])
-
+test_round =(pl.col("Round") == predict_round[1])
 train_data = feature_df.filter(~(test_year & test_round)) 
-test_data = feature_df.filter(test_year & test_round)
+
+_test_data = (
+  ladder.with_columns(Round = pl.col("Round.Number") - 1)
+        .filter(test_year & (pl.col("Round") == predict_round[1]-1))
+        .select("Team", "Percentage")
+)
+
+test_data = (fixture.filter(pl.col("Round") == predict_round[1])
+  .join(_test_data, how = "left", left_on = "Home.Team", right_on = "Team")
+  .rename({"Percentage":"home_team_prev_percentage"})
+  .join(_test_data, how = "left", left_on = "Away.Team", right_on = "Team")
+  .rename({"Percentage":"away_team_prev_percentage"}))
 
 x_train = train_data[["home_team_prev_percentage", "away_team_prev_percentage"]].to_numpy()
 y_train = train_data[["home_win"]].to_numpy()[:,0]
 x_test = test_data[["home_team_prev_percentage", "away_team_prev_percentage"]].to_numpy()
-y_test = test_data[["home_win"]].to_numpy()[:,0]
+# y_test = test_data[["home_win"]].to_numpy()[:,0]
 
 coords = {"coeffs": ["home_team_prev_percentage", "away_team_prev_percentage"]}
 
@@ -64,7 +80,7 @@ with pm.Model(coords=coords) as model:
     y = pm.Data("y", y_train)
     # priors
     a = pm.Normal("a", mu=0, sigma=1)
-    b = pm.Normal("b", mu=0, sigma=1, dims="coeffs")
+    b = pm.Normal("b", mu=0, sigma=0.1, dims="coeffs")
 
     # linear model
     mu = a + pm.math.dot(X, b)
@@ -80,14 +96,32 @@ az.plot_trace(idata, var_names="b", compact=False);
 az.summary(idata, var_names="a")
 az.summary(idata, var_names="b")
 
-with model:
-    pm.set_data({"X": x_test, "y": y_test})
-    idata.extend(pm.sample_posterior_predictive(idata))
+
+a_param = az.summary(idata, var_names = ["a", "b"])["mean"]["a"]
+bh_param = az.summary(idata, var_names = ["a", "b"])["mean"]["b[home_team_prev_percentage]"]
+ba_param = az.summary(idata, var_names = ["a", "b"])["mean"]["b[away_team_prev_percentage]"]
+
+p_array = a_param + bh_param *x_test[:,0] + ba_param * x_test[:,1]
 
 def logistic(p):
     return 1/(1+np.e**(-p))
 
-p_test_pred = idata.posterior_predictive["obs"].mean(dim=["chain", "draw"])
-p_test_pred.to_numpy()
 
-logistic(0.218)
+[logistic(p) for p in p_array]
+
+# idata.posterior[vari].mean()
+# idata.posterior.draw
+# dir(idata.posterior)
+# idata.posterior.a.mean()
+
+# with model:
+#     pm.set_data({"X": x_test})
+#     # pm.set_data({"X": x_test, "y": y_test})
+#     idata.extend(pm.sample_posterior_predictive(idata))
+
+
+# # p_test_pred = idata.posterior_predictive["obs"].mean(dim=["chain", "draw"])
+# # p_test_pred.to_numpy()
+
+# logistic(0.218)
+
