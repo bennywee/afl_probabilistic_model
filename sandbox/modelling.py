@@ -6,7 +6,7 @@ import arviz as az
 ladder_path = "data/dev/raw/ladder"
 results_path = "data/dev/raw/results"
 fixture_path = "data/prod/raw/fixture"
-predict_round = (2025, 4)
+predict_round = (2025, 17)
 
 ladder = pl.scan_parquet(ladder_path).collect()
 results = pl.scan_parquet(results_path).collect()
@@ -173,8 +173,8 @@ with pm.Model(coords=coords) as model:
     
     # priors
     a = pm.Normal("a", mu=0, sigma=0.1)
-    bp = pm.Normal("bp", mu=0, sigma=0.05, dims="perc_coeffs")
-    bw = pm.Normal("bw", mu=0, sigma=0.05, dims="delta_wins_coeffs")
+    bp = pm.Normal("bp", mu=0, sigma=1, dims="perc_coeffs")
+    bw = pm.Normal("bw", mu=0, sigma=1, dims="delta_wins_coeffs")
 
     # linear model
     mu = a + pm.math.dot(X_perc, bp) + pm.math.dot(X_delta_wins, bw)
