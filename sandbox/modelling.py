@@ -1,3 +1,5 @@
+import yaml
+
 import polars as pl
 import pymc as pm
 import numpy as np
@@ -194,4 +196,9 @@ p_array = a_param + np.dot(x_percentage_test, beta_p) + np.dot(x_delta_wins_test
 def logistic(p):
     return 1/(1+np.e**(-p))
 
-[(logistic(p), 1+np.log2(logistic(p)), 1+np.log2(1-logistic(p)))  for p in p_array]
+result_array = [(logistic(p), 1+np.log2(logistic(p)), 1+np.log2(1-logistic(p)))  for p in p_array]
+
+print(test_data)
+for i in range(len(result_array)):
+  print(result_array[i])
+

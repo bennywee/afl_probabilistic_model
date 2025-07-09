@@ -3,3 +3,6 @@ test_run:
 
 scrape_data:
 	Rscript scripts/data_pull.r
+
+run_model:
+	python sandbox/modelling.py
