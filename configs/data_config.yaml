@@ -5,12 +5,12 @@ raw_data_scrape:
     year_lb: 2025
     year_ub: 2025
     round_lb: 1
-    round_ub: 16
+    round_ub: 26
   results:
     data_loc: "raw/results"
     year_lb: 2025
     year_ub: 2025
     round_lb: 1
-    round_ub: 16
+    round_ub: 26
 model:
   predict_round: 18

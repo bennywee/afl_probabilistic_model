@@ -1,5 +1,3 @@
-import yaml
-
 import polars as pl
 import pymc as pm
 import numpy as np
@@ -7,8 +5,8 @@ import arviz as az
 
 ladder_path = "data/dev/raw/ladder"
 results_path = "data/dev/raw/results"
-fixture_path = "data/prod/raw/fixture"
-predict_round = (2025, 17)
+fixture_path = "data/dev/raw/fixture"
+predict_round = (2025, 29)
 
 ladder = pl.scan_parquet(ladder_path).collect()
 results = pl.scan_parquet(results_path).collect()
