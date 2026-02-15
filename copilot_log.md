@@ -108,3 +108,35 @@ python sandbox/modelling_refactored.py
 ```
 
 Made changes.
+
+User: I executed `python sandbox/modelling_refactored.py` however, I encountered an error during execution:
+
+Traceback (most recent call last):
+  File "/afl_probabilistic_model/sandbox/modelling_refactored.py", line 445, in <module>
+    main()
+  File "/afl_probabilistic_model/sandbox/modelling_refactored.py", line 438, in main
+    f"{home_team:12} vs {away_team:12} | "
+TypeError: unsupported format string passed to Series.__format__
+
+Please investigate this error and suggest a fix.
+
+GitHub Copilot: 
+
+User: @agent Try Again
+
+GitHub Copilot: I'll investigate the error. The issue is that `test_data[i]` returns a Polars Series, not a dictionary, so we can't directly access the team names. Let me fix this: 
+
+Using "Replace String in File"
+
+
+```
+
+```
+Fixed! The issue was that indexing a Polars DataFrame with `test_data[i]` returns a Series rather than a dictionary. I've changed it to convert the relevant columns to a list of dictionaries using `.to_dicts()`, which allows proper string formatting.
+
+Try running it again:
+```bash
+python sandbox/modelling_refactored.py
+```
+
+Made changes.

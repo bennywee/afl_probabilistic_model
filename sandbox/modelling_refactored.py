@@ -430,9 +430,12 @@ def main():
     print("\nFixture:")
     print(test_data.select("Home.Team", "Away.Team"))
     print("\nPredictions (Probability of Home Win, Log Odds Home, Log Odds Away):")
+    
+    # Convert to dict for easier iteration
+    test_data_dict = test_data.select("Home.Team", "Away.Team").to_dicts()
     for i, pred in enumerate(predictions):
-        home_team = test_data[i]["Home.Team"]
-        away_team = test_data[i]["Away.Team"]
+        home_team = test_data_dict[i]["Home.Team"]
+        away_team = test_data_dict[i]["Away.Team"]
         prob_home, log_odds_home, log_odds_away = pred
         print(
             f"{home_team:12} vs {away_team:12} | "
