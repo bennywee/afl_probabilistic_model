@@ -281,3 +281,55 @@ Done! I've fixed:
 2. Updated variable names in pipeline.py from `log_odds_home, log_odds_away` to `score_home_wins, score_away_wins` to match your latest commit changes
 
 Made changes.
+
+User: Extract the parameters in `src/modelling/config.py` and put them into `configs/data_config.yaml`. Ensure that the `.py` files that use these config parameters are updated to call the config from the new location.
+
+GitHub Copilot: 
+
+User: @agent Try Again
+
+GitHub Copilot: I'll read the existing config file and update code to load YAML, then write the YAML and update imports. I'll modify config.py and update files that import DATA_CONFIG (pipeline.py).
+
+Read [](file:///Users/benjaminwee/Documents/afl_probabilistic_model/configs/data_config.yaml)
+
+Read [](file:///Users/benjaminwee/Documents/afl_probabilistic_model/src/modelling/config.py)
+
+Read [](file:///Users/benjaminwee/Documents/afl_probabilistic_model/requirements.txt)
+
+Updating data_config.yaml and config.py to move DATA_CONFIG into YAML and load it at runtime. I'll append a `modelling` section to the YAML and modify the Python config loader.
+
+Using "Apply Patch"
+
+
+```
+
+```
+
+
+Using "Apply Patch"
+
+
+```
+
+```
+Done — I updated the YAML and the Python config loader.
+
+What I changed
+- Appended a `modelling` section to data_config.yaml with `ladder_path`, `results_path`, `fixture_path`, and `predict_round` (season/round).
+- Replaced the hardcoded `DATA_CONFIG` in config.py with code that loads data_config.yaml (requires PyYAML). The loader provides sensible defaults if keys are missing and converts the YAML `predict_round` into a Python tuple.
+
+Next steps you may want
+- If PyYAML isn't installed in your environment, install it:
+  ```bash
+  pip install pyyaml
+  ```
+- Run the pipeline:
+  ```bash
+  python -m src.modelling.pipeline
+  ```
+
+If you want, I can:
+- Add `pyyaml` to requirements.txt and commit it.
+- Validate the pipeline run and fix any remaining runtime errors. Which should I do next?
+
+Made changes.
