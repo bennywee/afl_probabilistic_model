@@ -436,11 +436,11 @@ def main():
     for i, pred in enumerate(predictions):
         home_team = test_data_dict[i]["Home.Team"]
         away_team = test_data_dict[i]["Away.Team"]
-        prob_home, log_odds_home, log_odds_away = pred
+        prob_home, score_home_wins, score_away_wins = pred
         print(
             f"{home_team:12} vs {away_team:12} | "
             f"P(Home)={prob_home:.3f} | "
-            f"Log Odds: {log_odds_home:.3f} (H) / {log_odds_away:.3f} (A)"
+            f"Score if H or A wins: {score_home_wins:.3f} (H) / {score_away_wins:.3f} (A)"
         )
 
 
