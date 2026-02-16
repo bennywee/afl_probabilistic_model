@@ -5,4 +5,7 @@ scrape_data:
 	Rscript scripts/data_pull.r
 
 run_model:
-	python sandbox/modelling.py
+	python scripts/pipeline.py
+
+run_model_refactored:
+	python scripts/pipeline.py
