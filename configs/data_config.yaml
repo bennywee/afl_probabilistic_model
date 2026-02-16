@@ -12,14 +12,14 @@ raw_data_scrape:
     year_ub: 2025
     round_lb: 1
     round_ub: 26
-model:
-  predict_round: 18
-
-
 modelling:
   ladder_path: "data/dev/raw/ladder"
   results_path: "data/dev/raw/results"
   fixture_path: "data/dev/raw/fixture"
+  feature_names: ["home_team_prev_percentage",
+    "away_team_prev_percentage",
+    "prev_home_delta_wins",
+    "prev_home_delta_loss"]
   predict_round:
     season: 2025
     round: 20

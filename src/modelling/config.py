@@ -20,21 +20,13 @@ except ModuleNotFoundError as e:
 _mod_cfg = _cfg.get("modelling", {})
 
 DATA_CONFIG = {
-    "ladder_path": _mod_cfg.get("ladder_path", "data/dev/raw/ladder"),
-    "results_path": _mod_cfg.get("results_path", "data/dev/raw/results"),
-    "fixture_path": _mod_cfg.get("fixture_path", "data/dev/raw/fixture"),
+    "ladder_path": _mod_cfg.get("ladder_path"),
+    "results_path": _mod_cfg.get("results_path"),
+    "fixture_path": _mod_cfg.get("fixture_path"),
+    "predict_round": (_mod_cfg.get("predict_round").get("season"), _mod_cfg.get("predict_round").get("round"))
 }
-
-_pr = _mod_cfg.get("predict_round") or {}
-if isinstance(_pr, dict):
-    DATA_CONFIG["predict_round"] = (_pr.get("season", 2025), _pr.get("round", 20))
-else:
-    DATA_CONFIG["predict_round"] = tuple(_pr) if _pr else (2025, 20)
 
 # Feature names used in the model
 FEATURE_NAMES = [
-    "home_team_prev_percentage",
-    "away_team_prev_percentage",
-    "prev_home_delta_wins",
-    "prev_home_delta_loss",
+    _mod_cfg.get("feature_names")
 ]
