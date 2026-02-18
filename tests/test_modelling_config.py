@@ -35,27 +35,6 @@ class TestConfigLoading:
         assert isinstance(DATA_CONFIG["results_path"], str)
         assert isinstance(DATA_CONFIG["fixture_path"], str)
 
-    def test_feature_names_defined(self):
-        """Test that FEATURE_NAMES is defined and is a list."""
-        from src.modelling.config import FEATURE_NAMES
-
-        assert isinstance(FEATURE_NAMES, list)
-        assert len(FEATURE_NAMES) > 0
-        assert all(isinstance(name, str) for name in FEATURE_NAMES)
-
-    def test_feature_names_expected_values(self):
-        """Test that FEATURE_NAMES contains expected feature columns."""
-        from src.modelling.config import FEATURE_NAMES
-
-        expected_features = {
-            "home_team_prev_percentage",
-            "away_team_prev_percentage",
-            "prev_home_delta_wins",
-            "prev_home_delta_loss",
-        }
-        assert set(FEATURE_NAMES) == expected_features
-
-
 class TestConfigDefaults:
     """Tests for configuration defaults."""
 

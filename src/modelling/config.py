@@ -25,8 +25,3 @@ DATA_CONFIG = {
     "fixture_path": _mod_cfg.get("fixture_path"),
     "predict_round": (_mod_cfg.get("predict_round").get("season"), _mod_cfg.get("predict_round").get("round"))
 }
-
-# Feature names used in the model
-FEATURE_NAMES = [
-    _mod_cfg.get("feature_names")
-]
