@@ -1,6 +1,5 @@
 """Tests for src.modelling.predictions module."""
 
-import pytest
 import numpy as np
 import polars as pl
 from src.modelling.predictions import (

@@ -1,6 +1,5 @@
 """Tests for src.modelling.config module."""
 
-import pytest
 import yaml
 from pathlib import Path
 

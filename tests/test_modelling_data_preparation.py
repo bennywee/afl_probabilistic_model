@@ -2,9 +2,7 @@
 
 import pytest
 import polars as pl
-import numpy as np
 from src.modelling.data_preparation import (
-    load_data,
     process_results,
     calculate_win_loss_records,
     prepare_main_features,
