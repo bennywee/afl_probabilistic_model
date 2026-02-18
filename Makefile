@@ -5,4 +5,4 @@ scrape_data:
 	Rscript scripts/data_pull.r
 
 run_model:
-	python -m src.modelling.cli
+	python -m src.modelling.run_train_pred
