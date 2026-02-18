@@ -123,17 +123,10 @@ class TestCalculateWinLossRecords:
 class TestPrepareMainFeatures:
     """Tests for prepare_main_features function."""
 
-    def test_returns_dataframe_with_percentage(self, sample_ladder_df):
+    def test_returns_dataframe_with_percentage(self, sample_ladder_df, sample_results_df):
         """Test that percentage columns are preserved."""
-        win_loss = calculate_win_loss_records(pl.DataFrame({
-            "Season": [2020, 2020, 2020, 2020],
-            "Round.Number": [1, 1, 2, 2],
-            "Team": ["TeamA", "TeamB", "TeamA", "TeamB"],
-            "total_wins": [1, 0, 1, 1],
-            "total_loss": [0, 1, 0, 1],
-            "prev_total_wins": [0, 0, 1, 0],
-            "prev_total_loss": [0, 0, 0, 1],
-        }))
+        results_df = process_results(sample_results_df)
+        win_loss = calculate_win_loss_records(results_df)
         
         result = prepare_main_features(sample_ladder_df, win_loss)
         assert "Percentage" in result.columns
@@ -171,11 +164,11 @@ class TestPrepareFeatureDataframe:
 class TestSplitTrainTest:
     """Tests for split_train_test function."""
 
-    def test_splits_correctly(self, sample_results_df):
+    def test_splits_correctly(self, sample_results_df, sample_ladder_df):
         """Test that data is split correctly by round."""
         results_df = process_results(sample_results_df)
         win_loss = calculate_win_loss_records(results_df)
-        main_features = prepare_main_features(sample_ladder_df(), win_loss)
+        main_features = prepare_main_features(sample_ladder_df, win_loss)
         
         feature_df = pl.DataFrame({
             "Season": [2020, 2020, 2025, 2025],

@@ -107,7 +107,7 @@ class TestGeneratePredictions:
             assert isinstance(score_away, (float, np.floating))
 
     def test_generate_predictions_complementary_scores(self):
-        """Test that score_home and score_away sum to 2."""
+        """Test that score_home and score_away follow the correct formula."""
         a_param = 0.0
         beta_p = np.array([0.5, -0.3])
         beta_w = np.array([0.1, 0.2])
@@ -118,7 +118,9 @@ class TestGeneratePredictions:
 
         for prob, score_home, score_away in result:
             # Score = 1 + log2(p), so score_home + score_away = 2 + log2(p(1-p))
-            assert np.isclose(score_home + score_away, 2.0, atol=0.1)
+            # where p is prob_home_win and (1-p) is prob_away_win
+            expected_sum = 2.0 + np.log2(prob * (1 - prob))
+            assert np.isclose(score_home + score_away, expected_sum, atol=0.01)
 
     def test_generate_predictions_deterministic(self):
         """Test that same inputs produce same outputs."""
