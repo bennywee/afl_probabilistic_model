@@ -195,4 +195,33 @@ with pm.Model(coords=coords) as model:
     # likelihood
     pm.Bernoulli("obs", p=p, observed=y)
     # fit the model
-    idata = pm.sample(random_seed=123)
+    idata = pm.sample(random_seed=123, tune=3000, target_accept=0.95)
+
+# az.summary(idata)
+
+# for var in rhat_ds.data_vars:
+#     vals = rhat_ds[var].values
+#     if np.any(~np.isfinite(vals)):
+#         bad[var] = np.unique(vals[~np.isfinite(vals)])
+
+# import arviz as az
+# import numpy as np
+
+# rhat = az.rhat(idata)
+# corr_rhat = rhat["pchol_home_corr"].values  # shape (chains, draws, n, n) flattened by az.rhat
+# # get the matrix R-hat (n x n)
+# # For pchol_home_corr in rhat Dataset, you can inspect:
+# print(corr_rhat)  
+# # But simpler: check which entries are non-finite
+# print(np.where(~np.isfinite(corr_rhat)))
+
+# print(idata.sample_stats["diverging"].any())
+# print(idata.sample_stats["tree_depth"].max())
+
+# az.summary(idata, var_names=["pchol_home_stds","pchol_away_stds","bw","mu_alpha_beta"])
+# az.plot_trace(idata, var_names=["stds_h","stds_a","bw"])
+
+# # show posterior variables
+# print(sorted(list(idata.posterior.data_vars)))
+# # and show sample_stats keys too
+# print(sorted(list(idata.sample_stats.data_vars)))

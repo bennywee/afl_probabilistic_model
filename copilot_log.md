@@ -756,3 +756,347 @@ Perfect! All 43 tests now pass. Here's a summary of the three issues I found and
 All 43 tests now pass successfully! ✅
 
 Made changes.
+
+User:  I'm trying to fit a multilevel logistic regression model using pymc. I have logic which has two groups for random intercepts and random slopes (home_games played and away_games_played). I am also trying to take out the correlation matrix from the prior and put it in the linear model (with LKJ priors on both sets of random effects).
+
+The code in this script  runs into an error when I attempt to fit the model. Please help me debug the problem so that this model will fit without error.
+
+GitHub Copilot: 
+
+User: @agent Try Again
+
+GitHub Copilot: I'll help you debug the multilevel logistic regression model. Let me first examine the current code to understand the issue. 
+
+Read [](file:///afl_probabilistic_model/sandbox/multilevel_cov.py)
+
+Let me run this code to see what error appears: 
+
+Ran terminal command:  python sandbox/multilevel_cov.py 2>&1 | head -100
+
+Let me configure the Python environment first: 
+
+Configuring a Python Environment
+Completed with input: {
+  "resourcePath": "/afl_probabilistic_model"
+}
+
+Creating a Virtual Environment
+
+Let me run it with proper Python path: 
+
+Ran terminal command:  PYTHONPATH=/afl_probabilistic_model python sandbox/multilevel_cov.py 2>&1 | head -150
+
+Great! I've found the issue. The problem is that you're using `"param"` as a dimension in `dims=("param", "home_games_played")`, but you haven't defined `"param"` in your coordinates dictionary. Let me examine the code more carefully and create a fixed version: 
+
+Created 2 todos
+
+The issue is clear: you're defining random effects with 2 parameters (intercept and slope for each set), but the `"param"` dimension isn't in your `coords` dictionary. You need to add it and also ensure the shapes match what `LKJCholeskyCov` expects.
+
+Let me create a corrected version: 
+
+Using "Replace String in File"
+
+
+```
+
+```
+Wait, I need to reconsider the model structure. Looking at your code more carefully, you have:
+- `chol_h` and `chol_a` from `LKJCholeskyCov` with `n=2` (2 parameters each)
+- `zh` and `za` with shape `(2, n_games)` 
+- Then you multiply `chol_h @ zh` which gives shape `(2, n_games)`
+- But you're indexing with 3 columns in the linear predictor
+
+Let me check what you're actually trying to model: 
+
+Read [](file:///afl_probabilistic_model/sandbox/multilevel_cov.py#100-100), lines 100 to 152
+
+I see the issue now. You're trying to use 3 parameters per group (intercept, home_games_slope, away_games_slope), but your `LKJCholeskyCov` only has `n=2`. You need to change `n=3` in both `LKJCholeskyCov` calls and also update your `param` coordinate to have 3 elements. Let me fix this: 
+
+Using "Replace String in File"
+
+
+```
+
+```
+Now update the mu_alpha_beta prior from shape=3 to match: 
+
+Using "Replace String in File"
+
+
+```
+
+```
+Now update the zh and za to use the correct parameter dimension: 
+
+Using "Replace String in File"
+
+
+```
+
+```
+Now test if the model builds and fits: 
+
+Ran terminal command:  timeout 120 python sandbox/multilevel_cov.py 2>&1 | tail -80
+
+Made changes.
+
+User: Thank you - I've updated the model because there was an error in mu where I added too many random effects. I've changed the shape from 3 back to 2 where appropriate. The model fits and samples now without encountering an error.
+
+When I check the model summary however using `az.summary()`, I get the following message: "RuntimeWarning: invalid value encountered in scalar divide (between_chain_variance / within_chain_variance + num_samples - 1) / (num_samples)".
+
+Can you please check my _current_ model specification and tell me why this error may occur? Do I need to make any adjustments?
+
+GitHub Copilot: 
+
+User: @agent Try Again
+
+GitHub Copilot: I'll open your current multilevel_cov.py to inspect the model and priors.
+
+Read [](file:///afl_probabilistic_model/sandbox/multilevel_cov.py)
+
+I'll create a short plan: inspect the model, identify which variables cause NaNs in R-hat, and recommend fixes.
+
+Added 1 todo
+
+I'll mark the first step done and start identifying problematic variables.
+
+Starting: *Identify variables causing R-hat NaNs* (2/3)
+
+Short answer: that warning comes from R̂ (R-hat) calculation encountering zero or non-finite within-chain variance for one or more variables (division by zero -> NaN). This is usually caused by (a) a variable that is constant within one or more chains, (b) a variable with NaNs/Infs in the draws, or (c) asking R̂ for huge deterministic/per-observation arrays (like `p`) that are effectively identical across samples.
+
+What to run (quick diagnostics)
+- Run this in the same environment where `idata` is available to find which variables/dimensions produce non-finite R̂:
+
+```python
+import arviz as az
+import numpy as np
+
+rhat_ds = az.rhat(idata)  # xarray Dataset
+bad = {}
+for var in rhat_ds.data_vars:
+    vals = rhat_ds[var].values
+    if np.any(~np.isfinite(vals)):
+        bad[var] = np.unique(vals[~np.isfinite(vals)])
+print("Variables with non-finite R-hat:")
+for k, v in bad.items():
+    print(k, v)
+```
+
+- Also check for NaNs/divergences in sampling:
+```python
+print(az.summary(idata, var_names=["diverging"], round_to=3))   # if you saved sampler stats
+az.plot_trace(idata, var_names=["mu_alpha_beta","bw","stds_h","stds_a"])
+```
+
+Immediate mitigations
+- Exclude large deterministic/per-observation arrays from `az.summary`. In your model `p` is deterministic with length = n_obs and often produces identical values across chains; exclude it when summarizing:
+```python
+az.summary(idata, var_names=["mu_alpha_beta","bw","stds_h","stds_a","pchol_home","pchol_away"])
+```
+(or explicitly omit `"p"`, `"alpha_beta_home"`, `"alpha_beta_away"` if you don’t need per-observation summaries)
+
+Why it happens in your model (likely)
+- `p` (the per-observation probability) and the deterministic group-effect arrays (`alpha_beta_home`, `alpha_beta_away`) are large arrays indexed by observations/groups. They can be near-identical across samples (or identical if something collapsed), giving zero within-chain variance -> R̂ computation triggers the RuntimeWarning.
+- Less likely but possible: one chain returned identical draws for some parameter (e.g., due to sampler failure, or storing only MAP for that chain). Check the sampler stats for warnings/divergences and that you actually ran multiple chains.
+
+Suggested checks/fixes
+- Use the diagnostic snippet above to find offending variables.
+- If problematic variables are deterministic/per-observation, just exclude them from `az.summary` (they’re not usually useful in summary tables).
+- If stochastic parameters show non-finite R̂:
+  - Inspect sampler diagnostics (divergences, tree depth, acceptance). Increase `tune`/`target_accept` or reparametrise.
+  - Ensure no parameters are accidentally fixed by your construction (e.g., broadcasting mistakes that make some parameters identical across indices).
+  - Check for NaNs in the data inputs (home_perc, away_perc, X_delta_wins, indices).
+- If many group-level effects have zero information (e.g., groups with a single observation), consider partial pooling priors or collapsing rarely-observed groups.
+
+If you want, I can:
+- Run the diagnostic snippet against your `idata` (if you saved it in this process), or
+- Re-run the model with a short test sampling (fewer draws) to reproduce and inspect the problematic variables. Which would you prefer?
+
+User: Thank you, running the above diagnostics returned this: pchol_home_corr [nan] pchol_away_corr [nan].
+
+Do you know why this has occurred and how I can fix this?
+
+GitHub Copilot: I'll update the todo list to mark diagnostics completed and add the recommendation step.
+
+Starting: *Recommend adjustments and diagnostics* (3/3)
+
+Progress update: diagnostics show `pchol_home_corr` and `pchol_away_corr` have NaN R̂ because the correlation matrices include constant entries (the 1.0 diagonals), which produce zero within‑chain variance and thus NaNs in R̂.
+
+Why this happens
+- `pchol_*_corr` is a full correlation matrix. Its diagonal elements are exactly 1.0 for every draw (constant across chains/draws). ArviZ computes R̂ per element; when within‑chain variance is zero (constant values) the R̂ formula gives 0/0 → NaN.
+- ArviZ flags the whole variable if any element's R̂ is non-finite, so variables that are matrices (with constant diagonals) show up as NaN.
+
+What to do (pick one)
+- Exclude correlation matrices and other deterministic/per-observation arrays from `az.summary`. e.g.:
+```python
+az.summary(idata, var_names=["mu_alpha_beta","bw","stds_h","stds_a"])
+```
+- Or compute R̂ just for off-diagonal correlation entries:
+```python
+import arviz as az
+import numpy as np
+
+rhat = az.rhat(idata)
+corr_rhat = rhat["pchol_home_corr"].values  # shape (chains, draws, n, n) flattened by az.rhat
+# get the matrix R-hat (n x n)
+# For pchol_home_corr in rhat Dataset, you can inspect:
+print(corr_rhat)  
+# But simpler: check which entries are non-finite
+print(np.where(~np.isfinite(corr_rhat)))
+```
+- If you want a quick filtered summary excluding problematic vars:
+```python
+bad_vars = ["pchol_home_corr","pchol_away_corr","p","alpha_beta_home","alpha_beta_away"]
+good_vars = [v for v in idata.posterior.data_vars if v not in bad_vars]
+az.summary(idata, var_names=good_vars)
+```
+
+Extra checks (recommended)
+- Confirm no sampler failures/divergences:
+```python
+print(idata.sample_stats["diverging"].any())
+print(idata.sample_stats["tree_depth"].max())
+```
+- Inspect `stds_h`/`stds_a` to ensure they are finite and well-mixed:
+```python
+az.summary(idata, var_names=["stds_h","stds_a","bw","mu_alpha_beta"])
+az.plot_trace(idata, var_names=["stds_h","stds_a","bw"])
+```
+
+Do you want me to:
+- add a short helper in multilevel_cov.py to produce a filtered summary (excluding these matrix vars), or
+- run the rhat/off-diagonal diagnostic now and show the exact entries that are NaN?
+
+User: Thank you, I get the following error when executing `az.summary(idata, var_names=["stds_h","stds_a","bw","mu_alpha_beta"])`: KeyError: 'var names: "[\'stds_h\' \'stds_a\'] are not present" in dataset'
+
+GitHub Copilot: Short answer: the KeyError happens because those exact variable names (`"stds_h"`, `"stds_a"`) are not keys in `idata`; use the actual names in `idata.posterior.data_vars`. The R̂ NaNs for `pchol_*_corr` are expected because their diagonal entries are constant 1.0 (zero within‑chain variance → division 0/0 → NaN).
+
+What to run (quick, exact steps)
+
+1) List the variables actually present:
+```python
+# show posterior variables
+print(sorted(list(idata.posterior.data_vars)))
+# and show sample_stats keys too
+print(sorted(list(idata.sample_stats.data_vars)))
+```
+
+2) Find the pchol-related names (shortcut):
+```python
+[v for v in idata.posterior.data_vars if "pchol" in v]
+```
+
+3) Make a safe summary by selecting variables that actually exist and excluding big/constant matrices:
+```python
+bad = {"pchol_home_corr","pchol_away_corr","p","alpha_beta_home","alpha_beta_away"}
+good = [v for v in idata.posterior.data_vars if v not in bad]
+az.summary(idata, var_names=good)
+```
+
+4) If you specifically want the stds produced by `LKJCholeskyCov`, find their exact names from step (1) (likely something like `"pchol_home_stds"` / `"pchol_away_stds"`) and call:
+```python
+az.summary(idata, var_names=["<exact_pchol_home_stds_name>", "<exact_pchol_away_stds_name>", "bw", "mu_alpha_beta"])
+```
+
+Why `pchol_*_corr` gives NaN R̂
+- The correlation matrices contain diagonal entries equal to 1 for every draw; within‑chain variance of a constant is zero so the R̂ formula does a 0/0 and yields NaN. ArviZ reports that NaN (or treats the whole array as problematic) even though only the diagonals are the cause.
+
+How to handle it
+- Don’t include full correlation matrices in `az.summary`. They’re deterministic on the diagonal and large; exclude them as shown above.
+- If you need correlation diagnostics, compute R̂ only for off‑diagonal entries:
+```python
+rhat = az.rhat(idata)["pchol_home_corr"]
+mask = ~np.eye(rhat.sizes["pchol_dim_0"], dtype=bool)   # adjust dimension name if needed
+offdiag = rhat.values[mask]
+np.where(~np.isfinite(offdiag))   # shows bad entries if any
+```
+(If the xarray dimension names differ, use the names printed by step 1.)
+
+Extra recommended checks
+- Confirm there are no sampler problems:
+```python
+print("divergences:", idata.sample_stats["diverging"].any().item())
+print("max tree depth:", idata.sample_stats["tree_depth"].max().item())
+```
+- Inspect mixing for scale parameters (the stds) and group coeffs with trace plots.
+
+If you want I can:
+- Add a short helper snippet into multilevel_cov.py that prints `idata` variable names, produces a safe `az.summary` (excluding corr matrices), and checks off‑diagonal R̂ for the two correlation matrices. Which would you prefer me to add?
+
+User: Is there a way to set up the model so that the diagnoals in the correlation matrices are not nan?
+
+GitHub Copilot: Short answer: you should not try to make the correlation-matrix diagonals vary — they are mathematically 1 and will always be constant, so R̂ (and Az's scalar-division formula) produces NaN for those entries. The correct fix is to summarize only the varying parts (off-diagonal correlations and/or stds), or expose the off-diagonal(s) as separate Deterministic variables so ArviZ computes R̂ on them.
+
+What to change (two minimal options)
+
+1) Extract the scalar off-diagonal correlation(s) (best for your n=2 case)
+Add these Deterministic nodes right after your LKJ calls, before sampling:
+
+```python
+# after: chol_h, corr_h, stds_h  = pm.LKJCholeskyCov(...)
+
+rho_home = pm.Deterministic("rho_home", corr_h[0, 1])
+rho_away = pm.Deterministic("rho_away", corr_a[0, 1])
+```
+
+Then summarize those instead of the full matrices:
+
+```python
+az.summary(idata, var_names=["rho_home", "rho_away", "pchol_home_stds", "pchol_away_stds", "bw", "mu_alpha_beta"])
+```
+
+2) General extraction for n>2 (stack off-diagonals)
+If you ever use n>2, create a 1‑D deterministic with the strict upper-triangle off-diagonals:
+
+```python
+n = 3  # replace with your n
+offdiag_idx = [(i, j) for i in range(n) for j in range(i + 1, n)]
+offdiag_vals = [corr_h[i, j] for (i, j) in offdiag_idx]
+pchol_home_offdiag = pm.Deterministic("pchol_home_offdiag", pt.stack(offdiag_vals))
+```
+
+Notes / rationale
+- The diagonal entries are exactly 1.0 for every draw; within-chain variance = 0 → R̂ formula does 0/0 → NaN. This is expected and correct.
+- Don’t try to make the diagonal slightly noisy to avoid NaNs — that would break the correlation semantics.
+- Also exclude large deterministic/per-observation arrays (e.g., `p`, `alpha_beta_*`) from `az.summary` unless you explicitly want them; they are often huge and may include constant-like structure.
+
+Quick helper (safe summary)
+```python
+bad = {"pchol_home_corr", "pchol_away_corr", "p", "alpha_beta_home", "alpha_beta_away"}
+good = [v for v in idata.posterior.data_vars if v not in bad]
+az.summary(idata, var_names=good)
+```
+
+If you want, I can patch your multilevel_cov.py to add `rho_home`/`rho_away` and a safe `az.summary` call — shall I do that?
+
+User: Thank you. That is is all ok now. 
+
+Can you now create functions that run predicions on the test set using this model as well as prints these predictions? Similar functions can be found in src/modelling/predictions.py (this is just for a plain bayesian logistic regression, not a multilevel logistic regression).
+
+GitHub Copilot: I'll open predictions.py to see existing functions to mirror.
+
+Read [](file:///afl_probabilistic_model/src/modelling/predictions.py)
+
+Read [](file:///afl_probabilistic_model/src/modelling/model.py)
+
+I'll add three functions to predictions.py: `extract_multilevel_means`, `generate_multilevel_predictions`, and `print_multilevel_predictions`. These will compute posterior-mean based predictions and print them. I'll update the file now.
+
+Using "Apply Patch"
+
+
+```
+
+```
+
+
+Completed: *Recommend adjustments and diagnostics* (3/4)
+
+Done — I added three helpers to predictions.py:
+
+- `extract_multilevel_means(idata)` — returns posterior means for `mu_alpha_beta`, `alpha_beta_home`, `alpha_beta_away`, and `bw`.
+- `generate_multilevel_predictions(idata, home_idx_test, away_idx_test, home_perc_test, away_perc_test, x_delta_wins_test)` — builds predictions using posterior means and returns (prob_home, score_home_if_win, score_away_if_win) per observation.
+- `print_multilevel_predictions(test_data, predictions)` — prints those predictions in a table.
+
+Next steps: do you want predictions computed from posterior samples (to include uncertainty intervals) rather than posterior means? If so I can add a sample-based prediction function.
+
+Made changes.
