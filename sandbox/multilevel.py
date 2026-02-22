@@ -112,31 +112,31 @@ coords = {
     }
 
 
-with pm.Model(coords=coords) as model:
-    home_idx = pm.Data("home_idx", home_games_played, dims="obs_id")
-    # data containers
-    X_perc = pm.Data("X_perc", x_percentage_train)
-    X_delta_wins = pm.Data("X_delta_wins", x_delta_wins_train)
-    y = pm.Data("y", y_train)
-    bw = pm.Normal("bw", mu=0, sigma=1, dims="delta_wins_coeffs")
-    # NC random intercepts
-    mu_a = pm.Normal("mu_a", mu=0.0, sigma=10.0)
-    sigma_a = pm.Exponential("sigma_a", 5)
-    z_a = pm.Normal("z_a", mu=0, sigma=1, dims="home_games_played")
-    alpha = pm.Deterministic("alpha", mu_a + z_a * sigma_a, dims="home_games_played")
-    # NC random slopes
-    mu_b = pm.Normal("mu_b", mu=0.0, sigma=10.0)
-    sigma_b = pm.Exponential("sigma_b", 5)
-    z_b = pm.Normal("z_b", mu=0, sigma=1, dims="home_games_played")
-    beta = pm.Deterministic("beta", mu_b + z_b * sigma_b, dims="home_games_played")
-    # Expected value
-    mu = alpha[home_games_played] + beta[home_games_played] * X_perc + pm.math.dot(X_delta_wins, bw)
-    # link function
-    p = pm.Deterministic("p", pm.math.invlogit(mu))
-    # likelihood
-    pm.Bernoulli("obs", p=p, observed=y)
-    # fit the model
-    idata = pm.sample(random_seed=123)
+# with pm.Model(coords=coords) as model:
+#     home_idx = pm.Data("home_idx", home_games_played, dims="obs_id")
+#     # data containers
+#     X_perc = pm.Data("X_perc", x_percentage_train)
+#     X_delta_wins = pm.Data("X_delta_wins", x_delta_wins_train)
+#     y = pm.Data("y", y_train)
+#     bw = pm.Normal("bw", mu=0, sigma=1, dims="delta_wins_coeffs")
+#     # NC random intercepts
+#     mu_a = pm.Normal("mu_a", mu=0.0, sigma=10.0)
+#     sigma_a = pm.Exponential("sigma_a", 5)
+#     z_a = pm.Normal("z_a", mu=0, sigma=1, dims="home_games_played")
+#     alpha = pm.Deterministic("alpha", mu_a + z_a * sigma_a, dims="home_games_played")
+#     # NC random slopes
+#     mu_b = pm.Normal("mu_b", mu=0.0, sigma=10.0)
+#     sigma_b = pm.Exponential("sigma_b", 5)
+#     z_b = pm.Normal("z_b", mu=0, sigma=1, dims="home_games_played")
+#     beta = pm.Deterministic("beta", mu_b + z_b * sigma_b, dims="home_games_played")
+#     # Expected value
+#     mu = alpha[home_games_played] + beta[home_games_played] * X_perc + pm.math.dot(X_delta_wins, bw)
+#     # link function
+#     p = pm.Deterministic("p", pm.math.invlogit(mu))
+#     # likelihood
+#     pm.Bernoulli("obs", p=p, observed=y)
+#     # fit the model
+#     idata = pm.sample(random_seed=123)
 
 coords = {
     "delta_wins_coeffs" :["prev_home_delta_wins","prev_home_delta_loss"],
@@ -149,36 +149,36 @@ away_percentage_train = train_data["home_team_prev_percentage"].to_numpy()
 
 
 # Add away int
-with pm.Model(coords=coords) as model:
-    home_idx = pm.Data("home_idx", home_games_played, dims="obs_id")
-    away_idx = pm.Data("away_idx", away_games_played, dims="obs_id")
-    # data containers
-    home_perc = pm.Data("home_perc", home_percentage_train)
-    away_perc = pm.Data("away_perc", away_percentage_train)
-    X_delta_wins = pm.Data("X_delta_wins", x_delta_wins_train)
-    y = pm.Data("y", y_train)
-    bw = pm.Normal("bw", mu=0, sigma=1, dims="delta_wins_coeffs")
-    # NC random intercepts
-    mu_h = pm.Normal("mu_h", mu=0.0, sigma=10.0)
-    sigma_a = pm.Exponential("sigma_a", 5)
-    z_a = pm.Normal("z_a", mu=0, sigma=1, dims="home_games_played")
-    sigma_h = pm.Exponential("sigma_h", 5)
-    z_h = pm.Normal("z_h", mu=0, sigma=1, dims="home_games_played") 
-    alpha = pm.Deterministic("alpha", mu_h + z_h * sigma_h, dims=["home_games_played"])
-    alpha_a = pm.Deterministic("alpha_a", z_a * sigma_a, dims=["away_games_played"])
-    # NC random slopes
-    mu_b = pm.Normal("mu_b", mu=0.0, sigma=10.0)
-    sigma_b = pm.Exponential("sigma_b", 5)
-    z_b = pm.Normal("z_b", mu=0, sigma=1, dims="home_games_played")
-    beta_home = pm.Deterministic("beta_home", mu_b + z_b * sigma_b, dims="home_games_played")
-    # Expected value
-    mu = alpha[home_games_played] + alpha_a[away_games_played] + beta_home[home_games_played] * home_perc + pm.math.dot(X_delta_wins, bw)
-    # link function
-    p = pm.Deterministic("p", pm.math.invlogit(mu))
-    # likelihood
-    pm.Bernoulli("obs", p=p, observed=y)
-    # fit the model
-    idata = pm.sample(random_seed=123)
+# with pm.Model(coords=coords) as model:
+#     home_idx = pm.Data("home_idx", home_games_played, dims="obs_id")
+#     away_idx = pm.Data("away_idx", away_games_played, dims="obs_id")
+#     # data containers
+#     home_perc = pm.Data("home_perc", home_percentage_train)
+#     away_perc = pm.Data("away_perc", away_percentage_train)
+#     X_delta_wins = pm.Data("X_delta_wins", x_delta_wins_train)
+#     y = pm.Data("y", y_train)
+#     bw = pm.Normal("bw", mu=0, sigma=1, dims="delta_wins_coeffs")
+#     # NC random intercepts
+#     mu_h = pm.Normal("mu_h", mu=0.0, sigma=10.0)
+#     sigma_a = pm.Exponential("sigma_a", 5)
+#     z_a = pm.Normal("z_a", mu=0, sigma=1, dims="home_games_played")
+#     sigma_h = pm.Exponential("sigma_h", 5)
+#     z_h = pm.Normal("z_h", mu=0, sigma=1, dims="home_games_played") 
+#     alpha = pm.Deterministic("alpha", mu_h + z_h * sigma_h, dims=["home_games_played"])
+#     alpha_a = pm.Deterministic("alpha_a", z_a * sigma_a, dims=["away_games_played"])
+#     # NC random slopes
+#     mu_b = pm.Normal("mu_b", mu=0.0, sigma=10.0)
+#     sigma_b = pm.Exponential("sigma_b", 5)
+#     z_b = pm.Normal("z_b", mu=0, sigma=1, dims="home_games_played")
+#     beta_home = pm.Deterministic("beta_home", mu_b + z_b * sigma_b, dims="home_games_played")
+#     # Expected value
+#     mu = alpha[home_games_played] + alpha_a[away_games_played] + beta_home[home_games_played] * home_perc + pm.math.dot(X_delta_wins, bw)
+#     # link function
+#     p = pm.Deterministic("p", pm.math.invlogit(mu))
+#     # likelihood
+#     pm.Bernoulli("obs", p=p, observed=y)
+#     # fit the model
+#     idata = pm.sample(random_seed=123)
 
 # Add away slope
 with pm.Model(coords=coords) as model:
@@ -215,6 +215,9 @@ with pm.Model(coords=coords) as model:
     # fit the model
     idata1 = pm.sample(random_seed=123)
 
+import arviz as az
+summary1 = az.summary(idata1)
+
     # Add covariance between home and away effects
 with pm.Model(coords=coords) as model:
     home_idx = pm.Data("home_idx", home_games_played, dims="obs_id")
@@ -227,17 +230,25 @@ with pm.Model(coords=coords) as model:
     bw = pm.Normal("bw", mu=0, sigma=1, dims="delta_wins_coeffs")
     # Covariance priors
     sd_dist = pm.HalfCauchy.dist(beta=2)
-    pchol1 = pm.LKJCholeskyCov('pchol_home', eta=4, n=2, sd_dist=sd_dist)
-    pchol2 = pm.LKJCholeskyCov('pchol_away', eta=4, n=2, sd_dist=sd_dist)
-    chol1 = pm.expand_packed_triangular(2, pchol1, lower=True)
-    chol2 = pm.expand_packed_triangular(2, pchol2, lower=True)
-    Intercept = pm.Normal('intercept', 0., 1., shape=3)
-    beta_home = pm.MvNormal('beta_home', mu=0., chol=chol1, shape=(home_games_idx, 2))
-    beta_away = pm.MvNormal('beta_away', mu=0., chol=chol2, shape=(away_games_idx, 2))
-    A = Intercept[0] + beta_home[home_games_played, 0] + beta_away[away_games_played, 0]
-    BH = Intercept[1] +beta_home[home_games_played, 1]
-    BA = Intercept[2] +beta_away[beta_away, 1]
-    mu = A + BH * home_perc + BA * away_perc + pm.math.dot(X_delta_wins, bw)
+    chol_h, corr_h, stds_h  = pm.LKJCholeskyCov('pchol_home', eta=4, n=2, sd_dist=sd_dist)
+    chol_a, corr_a, stds_a  = pm.LKJCholeskyCov('pchol_away', eta=4, n=2, sd_dist=sd_dist)
+    # priors for average intercept and slope:
+    mu_alpha_beta = pm.Normal("mu_alpha_beta", mu=0.0, sigma=5.0, shape=3)
+    # population of home effects:
+    zh = pm.Normal("zh", 0.0, 1.0, dims=("param", "home_games_played"))
+    alpha_beta_home = pm.Deterministic(
+        "alpha_beta_home", pt.dot(chol_h, zh).T, dims=("home_games_played", "param")
+    )
+    # population of away effects:
+    za = pm.Normal("za", 0.0, 1.0, dims=("param", "away_games_played"))
+    alpha_beta_away = pm.Deterministic(
+        "alpha_beta_away", pt.dot(chol_a, za).T, dims=("away_games_played", "param")
+    )
+    mu = (mu_alpha_beta[0] +
+         alpha_beta_home[home_idx, 0] + alpha_beta_away[away_idx, 0] +
+         (mu_alpha_beta[1] + alpha_beta_home[home_idx, 1] + alpha_beta_away[away_idx, 1]) * home_perc +
+         (mu_alpha_beta[2] + alpha_beta_home[home_idx, 2] + alpha_beta_away[away_idx, 2]) * away_perc +
+         pm.math.dot(X_delta_wins, bw))
     # link function
     p = pm.Deterministic("p", pm.math.invlogit(mu))
     # likelihood
