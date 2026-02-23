@@ -755,8 +755,6 @@ Perfect! All 43 tests now pass. Here's a summary of the three issues I found and
 
 All 43 tests now pass successfully! ✅
 
-Made changes.
-
 User:  I'm trying to fit a multilevel logistic regression model using pymc. I have logic which has two groups for random intercepts and random slopes (home_games played and away_games_played). I am also trying to take out the correlation matrix from the prior and put it in the linear model (with LKJ priors on both sets of random effects).
 
 The code in this script  runs into an error when I attempt to fit the model. Please help me debug the problem so that this model will fit without error.
@@ -1098,5 +1096,54 @@ Done — I added three helpers to predictions.py:
 - `print_multilevel_predictions(test_data, predictions)` — prints those predictions in a table.
 
 Next steps: do you want predictions computed from posterior samples (to include uncertainty intervals) rather than posterior means? If so I can add a sample-based prediction function.
+
+Made changes.
+
+User: Great. To run this model I needed to create new feature variables. This was done in the "games_played" object in the sandbox/multileve_cov.py script. To prepare the pipeline, we will need to put this feature engineering code into a function and run it as part of the pipeline. Can you take the code from this script and modularise it into a function that produces the home_games_played and away_games in the feature_df? Put this into the src/modelling/data_preparation.py script. Then update the pipeline so that the feature dataset has these columns available.
+
+GitHub Copilot: I'll examine the feature engineering code in multilevel_cov.py and the pipeline structure, then modularize it. 
+
+Read [](file:///afl_probabilistic_model/sandbox/multilevel_cov.py#41-41), lines 41 to 92
+
+Read [](file:///afl_probabilistic_model/src/modelling/data_preparation.py#1-1), lines 1 to 100
+
+Read [](file:///afl_probabilistic_model/src/modelling/pipeline.py)
+
+Now I'll create a function in data_preparation.py to add games-played features, then update the pipeline. 
+
+Read [](file:///afl_probabilistic_model/src/modelling/data_preparation.py#200-200), lines 200 to 301
+
+Perfect. Now I'll add the games-played feature function to data_preparation.py and update the pipeline to use it. 
+
+Using "Replace String in File"
+
+
+```
+
+```
+Now update the pipeline imports and calls to use the new function: 
+
+Using "Replace String in File"
+
+
+```
+
+```
+
+
+Using "Replace String in File"
+
+
+```
+
+```
+Done. I've modularized the games-played feature engineering into `add_games_played_features()` in data_preparation.py and integrated it into the pipeline. The function:
+
+- Takes `results_df` and `feature_df` as inputs
+- Builds cumulative games-played per season and team
+- Joins back to add `home_games_played` and `away_games_played` columns
+- Returns the enriched `feature_df`
+
+The pipeline now calls this function after preparing the initial features, so the `home_games_played` and `away_games_played` columns will be available downstream.
 
 Made changes.

@@ -209,6 +209,59 @@ def split_train_test(
     return train_data, test_season_data
 
 
+def add_games_played_features(
+    results_df: pl.DataFrame,
+    feature_df: pl.DataFrame,
+) -> pl.DataFrame:
+    """Add cumulative games-played features for home and away teams.
+    
+    Args:
+        results_df: Processed results DataFrame with Season, Round.Number, Home.Team, Away.Team
+        feature_df: Feature DataFrame to enrich
+        
+    Returns:
+        Feature DataFrame with home_games_played and away_games_played columns
+    """
+    # Create games-played frame from all games
+    all_games = pl.concat([
+        results_df.select("Season", "Round.Number", "Home.Team").rename({"Home.Team": "Team"}),
+        results_df.select("Season", "Round.Number", "Away.Team").rename({"Away.Team": "Team"}),
+    ]).sort(["Season", "Team", "Round.Number"])
+    
+    games_played = (
+        all_games
+        .with_columns(
+            games_count=pl.lit(1)
+        )
+        .with_columns(
+            games_played=pl.col("games_count").cum_sum().over("Season", "Team")
+        )
+        .select("Season", "Round.Number", "Team", "games_played")
+        # Subtract 1 to get games played BEFORE this round
+        .with_columns(
+            games_played=pl.col("games_played") - 1
+        )
+    )
+    
+    # Join back to feature_df for home team
+    feature_df = feature_df.join(
+        games_played,
+        left_on=["Season", "Round.Number", "Home.Team"],
+        right_on=["Season", "Round.Number", "Team"],
+        how="left",
+    ).rename({"games_played": "home_games_played"})
+    
+    # Join for away team
+    feature_df = feature_df.join(
+        games_played,
+        left_on=["Season", "Round.Number", "Away.Team"],
+        right_on=["Season", "Round.Number", "Team"],
+        how="left",
+    ).rename({"games_played": "away_games_played"})
+    
+    return feature_df
+
+
 def prepare_test_data(
     fixture: pl.DataFrame,
     test_season_data: pl.DataFrame,

@@ -11,6 +11,7 @@ from src.modelling.data_preparation import (
     calculate_win_loss_records,
     prepare_main_features,
     prepare_feature_dataframe,
+    add_games_played_features,
     split_train_test,
     prepare_test_data,
 )
@@ -54,6 +55,9 @@ def run_pipeline() -> Tuple[pl.DataFrame, List[tuple]]:
     
     print("Preparing feature dataframe...")
     feature_df = prepare_feature_dataframe(results_df, main_features)
+
+    print("Adding games-played features...")
+    feature_df = add_games_played_features(results_df, feature_df)
 
     print("Splitting train/test data...")
     train_data, test_season_data = split_train_test(feature_df, DATA_CONFIG["predict_round"])
