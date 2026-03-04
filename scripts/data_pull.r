@@ -39,7 +39,7 @@ if(!dir.exists(fixture_loc)){
 }
 
 fitzRoy::fetch_fixture_footywire(
-  season = 2025
+  season = 2026
 ) |> 
 arrow::write_dataset(format = "parquet",
                      path = fixture_loc)
