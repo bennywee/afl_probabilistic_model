@@ -277,35 +277,49 @@ def prepare_test_data(
     Returns:
         Test data with features for the prediction round
     """
-    # Extract home and away stats from test season
-    test_home = test_season_data.select(
-        "Home.Team",
-        "home_team_percentage",
-        "home_total_wins",
-        "home_total_loss",
-        "Round.Number",
-    ).rename(
-        {
-            "Home.Team": "Team",
-            "home_team_percentage": "percentage",
-            "home_total_wins": "total_wins",
-            "home_total_loss": "total_loss",
-        }
+    # Use the enriched `test_season_data` (which should already include
+    # games-played columns added earlier by `add_games_played_features`).
+    # Extract home and away stats from test season, including games_played
+    test_home = (
+        test_season_data.select(
+            "Season",
+            "Home.Team",
+            "home_team_percentage",
+            "home_total_wins",
+            "home_total_loss",
+            "Round.Number",
+            "home_games_played",
+        )
+        .rename(
+            {
+                "Home.Team": "Team",
+                "home_team_percentage": "percentage",
+                "home_total_wins": "total_wins",
+                "home_total_loss": "total_loss",
+                "home_games_played": "games_played",
+            }
+        )
     )
 
-    test_away = test_season_data.select(
-        "Away.Team",
-        "away_team_percentage",
-        "away_total_wins",
-        "away_total_loss",
-        "Round.Number",
-    ).rename(
-        {
-            "Away.Team": "Team",
-            "away_team_percentage": "percentage",
-            "away_total_wins": "total_wins",
-            "away_total_loss": "total_loss",
-        }
+    test_away = (
+        test_season_data.select(
+            "Season",
+            "Away.Team",
+            "away_team_percentage",
+            "away_total_wins",
+            "away_total_loss",
+            "Round.Number",
+            "away_games_played",
+        )
+        .rename(
+            {
+                "Away.Team": "Team",
+                "away_team_percentage": "percentage",
+                "away_total_wins": "total_wins",
+                "away_total_loss": "total_loss",
+                "away_games_played": "games_played",
+            }
+        )
     )
 
     # Get latest stats per team
@@ -321,7 +335,7 @@ def prepare_test_data(
         .drop("Round.Number")
     )
 
-    # Join with fixture for prediction round
+    # Join with fixture for prediction round and include games-played as home/away columns
     return (
         fixture.filter(pl.col("Round") == predict_round[1])
         .join(
@@ -332,6 +346,7 @@ def prepare_test_data(
                 "percentage": "home_team_prev_percentage",
                 "total_wins": "home_prev_total_wins",
                 "total_loss": "home_prev_total_loss",
+                "games_played": "home_games_played",
             }
         )
         .join(
@@ -342,6 +357,7 @@ def prepare_test_data(
                 "percentage": "away_team_prev_percentage",
                 "total_wins": "away_prev_total_wins",
                 "total_loss": "away_prev_total_loss",
+                "games_played": "away_games_played",
             }
         )
         .with_columns(

@@ -2,24 +2,27 @@ raw_data_scrape:
   tables: ["ladder", "results"]
   ladder:
     data_loc: "raw/ladder"
-    year_lb: 2025
-    year_ub: 2025
+    year_lb: 2026
+    year_ub: 2026
     round_lb: 1
-    round_ub: 26
+    round_ub: 1
   results:
     data_loc: "raw/results"
-    year_lb: 2025
-    year_ub: 2025
+    year_lb: 2026
+    year_ub: 2026
     round_lb: 1
-    round_ub: 26
+    round_ub: 1
 modelling:
+  model_type: "multilevel"  # Options: "bayesian" or "multilevel"  
   ladder_path: "data/dev/raw/ladder"
   results_path: "data/dev/raw/results"
   fixture_path: "data/dev/raw/fixture"
   feature_names: ["home_team_prev_percentage",
     "away_team_prev_percentage",
     "prev_home_delta_wins",
-    "prev_home_delta_loss"]
+    "prev_home_delta_loss",
+    "home_games_played",
+    "away_games_played"]
   predict_round:
-    season: 2025
-    round: 20
+    season: 2026
+    round: 1

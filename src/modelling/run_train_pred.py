@@ -2,26 +2,32 @@
 """Small CLI runner for the modelling pipeline.
 
 This module keeps the `main` function small and delegates the heavy
-lifting to `pipeline.run_pipeline` so the pipeline code is easy to
-import and test.
+lifting to `pipeline.run_pipeline` which automatically selects the
+model type based on configuration.
 """
 
 from src.modelling.pipeline import run_pipeline
-from src.modelling.predictions import print_predictions
+from src.modelling.predictions import print_predictions, print_multilevel_predictions
 from src.modelling.config import DATA_CONFIG
 
 
 def main():
+    model_type = DATA_CONFIG.get("model_type", "bayesian").lower()
+    
     test_data, predictions = run_pipeline()
 
     print("\n" + "=" * 80)
     print(f"Predictions for Round {DATA_CONFIG['predict_round'][1]}, "
-          f"Season {DATA_CONFIG['predict_round'][0]}")
+          f"Season {DATA_CONFIG['predict_round'][0]} [{model_type.upper()} MODEL]")
     print("=" * 80)
     print("\nFixture:")
     print(test_data.select("Home.Team", "Away.Team"))
     
-    print_predictions(test_data, predictions)
+    # Use appropriate print function based on model type
+    if model_type == "multilevel":
+        print_multilevel_predictions(test_data, predictions)
+    else:
+        print_predictions(test_data, predictions)
 
 
 if __name__ == "__main__":

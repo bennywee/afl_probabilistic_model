@@ -20,6 +20,7 @@ except ModuleNotFoundError as e:
 _mod_cfg = _cfg.get("modelling", {})
 
 DATA_CONFIG = {
+    "model_type": _mod_cfg.get("model_type", "bayesian"),
     "ladder_path": _mod_cfg.get("ladder_path"),
     "results_path": _mod_cfg.get("results_path"),
     "fixture_path": _mod_cfg.get("fixture_path"),
