@@ -152,8 +152,8 @@ x_train = train_data[feature_names].to_numpy()
 y_train = train_data[["home_win"]].to_numpy()[:,0]
 x_test = test_data[feature_names].to_numpy()
 
-x_percentage_train = train_data["home_team_prev_percentage", "away_team_prev_percentage"].to_numpy()
-x_delta_wins_train = train_data["prev_home_delta_wins","prev_home_delta_loss"].to_numpy()
+x_percentage_train = train_data[["home_team_prev_percentage", "away_team_prev_percentage"]].to_numpy()
+x_delta_wins_train = train_data[["prev_home_delta_wins","prev_home_delta_loss"]].to_numpy()
 
 x_percentage_test = test_data["home_team_prev_percentage", "away_team_prev_percentage"].to_numpy()
 x_delta_wins_test = test_data["prev_home_delta_wins","prev_home_delta_loss"].to_numpy()
@@ -200,3 +200,28 @@ print(test_data)
 for i in range(len(result_array)):
   print(result_array[i])
 
+import arviz as az
+import numpy as np
+
+rhat_ds = az.rhat(idata)  # xarray Dataset
+bad = {}
+for var in rhat_ds.data_vars:
+    vals = rhat_ds[var].values
+    if np.any(~np.isfinite(vals)):
+        bad[var] = np.unique(vals[~np.isfinite(vals)])
+print("Variables with non-finite R-hat:")
+for k, v in bad.items():
+    print(k, v)
+
+a=0
+h=0
+mu_alpha_beta_mean[0]
++ alpha_beta_home_mean[h, 0]
++ alpha_beta_away_mean[a, 0]
++ (mu_alpha_beta_mean[1] + alpha_beta_home_mean[h, 1]) * #home_perc_test[i]
++ (mu_alpha_beta_mean[2] + alpha_beta_away_mean[a, 1]) * #away_perc_test[i]
++ np.dot(x_delta_wins_test[i], bw_mean)
+
+mu_alpha_beta_mean[0]
++ alpha_beta_home_mean[h, 0]
++ alpha_beta_away_mean[a, 0]

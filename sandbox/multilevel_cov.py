@@ -14,6 +14,7 @@ from src.modelling.model import (
 )
 from src.modelling.predictions import (
     generate_predictions,
+    extract_multilevel_means
 )
 from src.modelling.config import DATA_CONFIG
 from typing import Tuple, List
@@ -96,12 +97,12 @@ away_games_played, away_games_idx = train_data.to_pandas().away_games_played.fac
 y_train = train_data[["home_win"]].to_numpy()[:,0]
 x_delta_wins_train = train_data[["prev_home_delta_wins","prev_home_delta_loss"]].to_numpy()
 
-coords = {
-    "delta_wins_coeffs": ["prev_home_delta_wins", "prev_home_delta_loss"],
-    "home_games_played": home_games_idx,
-    "away_games_played": away_games_idx,
-    "param": ["intercept", "home_games_slope", "away_games_slope"]
-    }
+# coords = {
+#     "delta_wins_coeffs": ["prev_home_delta_wins", "prev_home_delta_loss"],
+#     "home_games_played": home_games_idx,
+#     "away_games_played": away_games_idx,
+#     "param": ["intercept", "home_games_slope", "away_games_slope"]
+#     }
 
 home_percentage_train = train_data["home_team_prev_percentage"].to_numpy()
 away_percentage_train = train_data["away_team_prev_percentage"].to_numpy()
@@ -225,3 +226,147 @@ with pm.Model(coords=coords) as model:
 # print(sorted(list(idata.posterior.data_vars)))
 # # and show sample_stats keys too
 # print(sorted(list(idata.sample_stats.data_vars)))
+
+"""Pipeline implementation for the modelling package.
+
+This module provides a `run_pipeline` function that performs the data
+preparation, model training and prediction generation. It can run either
+a standard Bayesian logistic regression or a multilevel logistic regression
+based on the model_type configuration.
+"""
+
+from src.modelling.data_preparation import (
+    load_data,
+    process_results,
+    calculate_win_loss_records,
+    prepare_main_features,
+    prepare_feature_dataframe,
+    add_games_played_features,
+    split_train_test,
+    prepare_test_data,
+)
+from src.modelling.model import (
+    setup_model_data,
+    fit_bayesian_model,
+    extract_parameters,
+    setup_multilevel_model_data,
+    fit_multilevel_model,
+)
+from src.modelling.predictions import (
+    generate_predictions,
+    generate_multilevel_predictions,
+    logistic
+)
+from src.modelling.config import DATA_CONFIG
+from typing import Tuple, List
+import polars as pl
+
+
+
+model_type = DATA_CONFIG.get("model_type", "bayesian").lower()
+    
+if model_type not in ["bayesian", "multilevel"]:
+    raise ValueError(f"Unknown model_type '{model_type}'. Use 'bayesian' or 'multilevel'.")
+
+print("Loading data...")
+ladder, results, fixture = load_data(
+    DATA_CONFIG["ladder_path"],
+    DATA_CONFIG["results_path"],
+    DATA_CONFIG["fixture_path"],
+)
+print("Processing results...")
+results_df = process_results(results)
+
+print("Calculating win/loss records...")
+total_win_loss = calculate_win_loss_records(results_df)
+
+print("Preparing main features...")
+main_features = prepare_main_features(ladder, total_win_loss)
+
+print("Preparing feature dataframe...")
+feature_df = prepare_feature_dataframe(results_df, main_features)
+print("Adding games-played features...")
+feature_df = add_games_played_features(results_df, feature_df)
+print("Splitting train/test data...")
+train_data, test_season_data = split_train_test(feature_df, DATA_CONFIG["predict_round"])
+
+print("Preparing test data...")
+test_data = prepare_test_data(fixture, test_season_data, DATA_CONFIG["predict_round"])
+
+print("Setting up multilevel model data...")
+home_idx, away_idx, home_perc, away_perc, x_delta_wins, y, coords = setup_multilevel_model_data(train_data)
+
+print("Fitting multilevel logistic regression model (this may take a few minutes)...")
+idata = fit_multilevel_model(home_idx, away_idx, home_perc, away_perc, x_delta_wins, y, coords)
+
+print("Generating multilevel predictions...")
+ # Prepare test data indices by factorizing test games-played
+test_home_idx = test_data.to_pandas().home_games_played.values
+test_away_idx = test_data.to_pandas().home_games_played.values
+test_home_perc = test_data["home_team_prev_percentage"].to_numpy()
+test_away_perc = test_data["away_team_prev_percentage"].to_numpy()
+test_x_delta = test_data[["prev_home_delta_wins", "prev_home_delta_loss"]].to_numpy()
+predictions = generate_multilevel_predictions(
+     idata, test_home_idx, test_away_idx, test_home_perc, test_away_perc, test_x_delta
+ )
+
+ # Opening round 
+ h=0
+ a=0
+ mu_alpha_beta_mean[0]
++ alpha_beta_home_mean[h, 0]
++ alpha_beta_away_mean[a, 0]
+
+# Syd Calrton
+home_perc_test = 0.970032	
+away_perc_test = 0.966685
+x_delta_wins_test = np.array([3,-3])
+
+# Gold coast vs geelong
+home_perc_test = 1.248851	
+away_perc_test = 1.414819
+x_delta_wins_test = np.array([-2,2])
+
+# GWS hawthorn
+home_perc_test = 1.152672
+away_perc_test = 1.209344
+x_delta_wins_test = np.array([1,-1])
+
+# Brisbane Doggies
+home_perc_test = 1.142461	
+away_perc_test = 1.36978
+x_delta_wins_test = np.array([3,-3])
+
+#St kilda pies
+home_perc_test = 0.885412
+away_perc_test = 1.223725	
+x_delta_wins_test = np.array([-7,7])
+
+
+logistic(
+    mu_alpha_beta_mean[0]
+            + alpha_beta_home_mean[h, 0]
+            + alpha_beta_away_mean[a, 0]
+            + (mu_alpha_beta_mean[1] + alpha_beta_home_mean[h, 1]) * home_perc_test
+            + (mu_alpha_beta_mean[2] + alpha_beta_away_mean[a, 1]) * away_perc_test
+            + np.dot(x_delta_wins_test, bw_mean)
+)
+
+
+
+round25 = (feature_df.filter(pl.col("Season") == 2025) 
+          .filter(pl.col("Round.Number") == 25)) 
+
+(feature_df.filter(pl.col("Season") == 2025) 
+          .filter(pl.col("Round.Number") == 25)
+          .select(["Home.Team", "Away.Team",
+                   "home_team_percentage",
+                   "away_team_percentage",
+                   "home_total_wins",
+                   "away_total_wins",
+                   "home_total_loss",
+                   "away_total_loss"
+                   ])
+        #    .filter(pl.col("Away.Team").is_in(["St Kilda"])))
+           .filter(pl.col("Home.Team").is_in(["Collingwood"])))
+
