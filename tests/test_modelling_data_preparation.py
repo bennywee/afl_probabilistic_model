@@ -3,11 +3,13 @@
 import pytest
 import polars as pl
 from src.modelling.data_preparation import (
+    load_data,
     process_results,
     calculate_win_loss_records,
     prepare_main_features,
     prepare_feature_dataframe,
     split_train_test,
+    add_games_played_features,
     prepare_test_data,
 )
 
@@ -193,6 +195,75 @@ class TestSplitTrainTest:
         
         # Prediction round should not be in training
         assert train_data.filter(pl.col("Round") == 29).shape[0] == 0
+
+
+class TestLoadData:
+    """Tests for load_data function."""
+
+    def test_load_data_returns_three_dataframes(self, monkeypatch):
+        """Test that load_data returns three DataFrames."""
+        def mock_scan_parquet(path):
+            if 'ladder' in str(path):
+                return pl.DataFrame({"Team": ["A"], "Season": [2020]}).lazy()
+            elif 'results' in str(path):
+                return pl.DataFrame({"Home.Team": ["A"], "Away.Team": ["B"]}).lazy()
+            elif 'fixture' in str(path):
+                return pl.DataFrame({"Round": [1], "Home.Team": ["A"], "Away.Team": ["B"]}).lazy()
+        
+        monkeypatch.setattr(pl, 'scan_parquet', mock_scan_parquet)
+        
+        ladder, results, fixture = load_data('ladder.parquet', 'results.parquet', 'fixture.parquet')
+        
+        assert isinstance(ladder, pl.DataFrame)
+        assert isinstance(results, pl.DataFrame)
+        assert isinstance(fixture, pl.DataFrame)
+
+    def test_load_data_fixture_round_adjusted(self, monkeypatch):
+        """Test that fixture Round is adjusted by subtracting 1."""
+        def mock_scan_parquet(path):
+            return pl.DataFrame({"Round": [2], "Home.Team": ["A"], "Away.Team": ["B"]}).lazy()
+        
+        monkeypatch.setattr(pl, 'scan_parquet', mock_scan_parquet)
+        
+        _, _, fixture = load_data('', '', 'fixture.parquet')
+        
+        assert fixture['Round'][0] == 1
+
+
+class TestAddGamesPlayedFeatures:
+    """Tests for add_games_played_features function."""
+
+    @pytest.fixture
+    def sample_feature_df(self):
+        """Create a sample feature DataFrame."""
+        return pl.DataFrame({
+            "Season": [2020, 2020],
+            "Round.Number": [1, 2],
+            "Home.Team": ["TeamA", "TeamA"],
+            "Away.Team": ["TeamB", "TeamC"],
+            "home_win": [1, 0],
+        })
+
+    def test_adds_games_played_columns(self, sample_results_df, sample_feature_df):
+        """Test that home_games_played and away_games_played columns are added."""
+        result = add_games_played_features(sample_results_df, sample_feature_df)
+        
+        assert "home_games_played" in result.columns
+        assert "away_games_played" in result.columns
+
+    def test_games_played_calculation(self, sample_results_df, sample_feature_df):
+        """Test that games played are calculated correctly."""
+        result = add_games_played_features(sample_results_df, sample_feature_df)
+        
+        # For round 1, games played should be 0 (no previous games)
+        round_1 = result.filter(pl.col("Round.Number") == 1)
+        assert round_1["home_games_played"][0] == 0
+        assert round_1["away_games_played"][0] == 0
+        
+        # For round 2, home team TeamA has played 1 game (round 1), away team TeamC has played 0
+        round_2 = result.filter(pl.col("Round.Number") == 2)
+        assert round_2["home_games_played"][0] == 1  # TeamA played in round 1
+        assert round_2["away_games_played"][0] == 0  # TeamC didn't play before
 
 
 class TestPrepareTestData:
