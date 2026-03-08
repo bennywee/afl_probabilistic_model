@@ -287,6 +287,8 @@ class TestPrepareTestData:
             "home_total_loss": [8, 10, 10, 8],
             "away_total_wins": [16, 16, 20, 16],
             "away_total_loss": [12, 12, 8, 12],
+            "home_games_played": [27, 27, 27, 27],
+            "away_games_played": [27, 27, 27, 27],
         })
         
         result = prepare_test_data(fixture, test_season_data, (2025, 29))
