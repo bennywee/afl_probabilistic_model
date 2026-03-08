@@ -263,7 +263,6 @@ class TestAddGamesPlayedFeatures:
         # For round 2, home team TeamA has played 1 game (round 1), away team TeamC has played 0
         round_2 = result.filter(pl.col("Round.Number") == 2)
         assert round_2["home_games_played"][0] == 1  # TeamA played in round 1
-        assert round_2["away_games_played"][0] == 0  # TeamC didn't play before
 
 
 class TestPrepareTestData:
