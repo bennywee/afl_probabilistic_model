@@ -237,15 +237,38 @@ def add_games_played_features(
             games_played=pl.col("games_count").cum_sum().over("Season", "Team")
         )
         .select("Season", "Round.Number", "Team", "games_played")
-        # Subtract 1 to get games played BEFORE this round
+        # Add 1 to round.number to reflect games played up to the current round (not including current round)
         .with_columns(
-            games_played=pl.col("games_played") - 1
+            pl.col("Round.Number") + 1
+        )
+    )
+    
+    # Create a vector of all rounds (1-25) and cross join with all teams/seasons
+    # to ensure complete coverage including bye rounds
+    all_rounds = pl.DataFrame({"Round.Number": list(range(1, 26))})
+    all_seasons_teams = games_played.select("Season", "Team").unique()
+    
+    rounds_complete = (
+        all_seasons_teams
+        .join(all_rounds, how="cross")
+        .sort(["Season", "Team", "Round.Number"])
+    )
+    
+    # Left join games_played onto the complete rounds to fill in missing rounds with nulls
+    games_played_complete = (
+        rounds_complete
+        .join(games_played, on=["Season", "Round.Number", "Team"], how="left")
+        # Forward fill missing values (caused by byes) with previous round's games_played
+        .with_columns(
+            games_played=pl.col("games_played")
+            .fill_null(strategy="forward")
+            .over(["Season", "Team"])
         )
     )
     
     # Join back to feature_df for home team
     feature_df = feature_df.join(
-        games_played,
+        games_played_complete,
         left_on=["Season", "Round.Number", "Home.Team"],
         right_on=["Season", "Round.Number", "Team"],
         how="left",
@@ -253,7 +276,7 @@ def add_games_played_features(
     
     # Join for away team
     feature_df = feature_df.join(
-        games_played,
+        games_played_complete,
         left_on=["Season", "Round.Number", "Away.Team"],
         right_on=["Season", "Round.Number", "Team"],
         how="left",

@@ -251,18 +251,86 @@ class TestAddGamesPlayedFeatures:
         assert "home_games_played" in result.columns
         assert "away_games_played" in result.columns
 
+    def test_games_played_away_teams(self):
+        """Test that games played are correctly calculated for away teams."""
+        results = pl.DataFrame({
+            "Season": [2021, 2021],
+            "Round.Number": [1, 2],
+            "Home.Points": [100, 95],
+            "Away.Points": [90, 85],
+            "Home.Team": ["TeamA", "TeamB"],
+            "Away.Team": ["TeamB", "TeamA"],
+            "Round": ["R1", "R2"],
+        })
+        feature_df = pl.DataFrame({
+            "Season": [2021, 2021],
+            "Round.Number": [1, 2],
+            "Home.Team": ["TeamA", "TeamB"],
+            "Away.Team": ["TeamB", "TeamA"],
+            "home_win": [1, 0],
+        })
+        result = add_games_played_features(results, feature_df)
+        
+        # In round 1, both teams are playing their first game (no games before round 1)
+        r1 = result.filter(pl.col("Round.Number") == 1)
+        assert r1["home_games_played"][0] is None
+        assert r1["away_games_played"][0] is None
+        
+        # In round 2, both teams have played 1 game
+        r2 = result.filter(pl.col("Round.Number") == 2)
+        assert r2["home_games_played"][0] == 1
+        assert r2["away_games_played"][0] == 1
+
     def test_games_played_calculation(self, sample_results_df, sample_feature_df):
         """Test that games played are calculated correctly."""
         result = add_games_played_features(sample_results_df, sample_feature_df)
         
-        # For round 1, games played should be 0 (no previous games)
+        # For round 1, games played should be None (no games before round 1)
         round_1 = result.filter(pl.col("Round.Number") == 1)
-        assert round_1["home_games_played"][0] == 0
-        assert round_1["away_games_played"][0] == 0
+        assert round_1["home_games_played"][0] is None
+        assert round_1["away_games_played"][0] is None
         
         # For round 2, home team TeamA has played 1 game (round 1)
         round_2 = result.filter(pl.col("Round.Number") == 2)
         assert round_2["home_games_played"][0] == 1  # TeamA played in round 1
+
+    def test_games_played_handles_byes(self):
+        """Test that bye rounds are filled forward with previous round's games played."""
+        # Create results where TeamA has a bye in round 2
+        results = pl.DataFrame({
+            "Season": [2021, 2021, 2021],
+            "Round.Number": [1, 3, 4],
+            "Home.Points": [100, 95, 110],
+            "Away.Points": [90, 85, 100],
+            "Home.Team": ["TeamA", "TeamA", "TeamA"],
+            "Away.Team": ["TeamB", "TeamC", "TeamD"],
+            "Round": ["R1", "R3", "R4"],
+        })
+        # Feature dataframe with all rounds including the bye in round 2
+        feature_df = pl.DataFrame({
+            "Season": [2021, 2021, 2021, 2021],
+            "Round.Number": [1, 2, 3, 4],
+            "Home.Team": ["TeamA", "TeamA", "TeamA", "TeamA"],
+            "Away.Team": ["TeamB", "TeamX", "TeamC", "TeamD"],
+            "home_win": [1, 0, 0, 1],
+        })
+        result = add_games_played_features(results, feature_df)
+        
+        # Round 1: TeamA plays 1 game (no games before round 1)
+        r1 = result.filter(pl.col("Round.Number") == 1)
+        assert r1["home_games_played"][0] is None  # Games played UP TO round 1 (before it)
+        
+        # Round 2: TeamA has a bye, should forward fill from round 1
+        r2 = result.filter(pl.col("Round.Number") == 2)
+        assert r2["home_games_played"][0] == 1  # Carries forward from round 1
+        
+        # Round 3: TeamA plays, should have 1 games played before it
+        r3 = result.filter(pl.col("Round.Number") == 3)
+        assert r3["home_games_played"][0] == 1  # Still 1 game played (only round 1)
+        
+        # Round 4: TeamA plays, should have 2 games played before it
+        r4 = result.filter(pl.col("Round.Number") == 4)
+        assert r4["home_games_played"][0] == 2  # Now 2 games (rounds 1 and 3)
 
 
 class TestPrepareTestData:
