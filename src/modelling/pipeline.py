@@ -106,8 +106,8 @@ def run_pipeline() -> Tuple[pl.DataFrame, List[tuple]]:
 
         print("Generating multilevel predictions...")
         # Prepare test data indices by factorizing test games-played
-        test_home_idx = test_data.to_pandas().home_games_played.values
-        test_away_idx = test_data.to_pandas().away_games_played.values
+        test_home_idx = test_data.to_pandas().home_prev_games_played.values
+        test_away_idx = test_data.to_pandas().away_prev_games_played.values
         test_home_perc = test_data["home_team_prev_percentage"].to_numpy()
         test_away_perc = test_data["away_team_prev_percentage"].to_numpy()
         test_x_delta = test_data[["prev_home_delta_wins", "prev_home_delta_loss"]].to_numpy()

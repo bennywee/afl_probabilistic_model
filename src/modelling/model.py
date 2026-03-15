@@ -129,8 +129,8 @@ def setup_multilevel_model_data(
         Tuple of (home_idx, away_idx, home_perc, away_perc, x_delta_wins, y, coords)
     """
     # Factorize games-played indices
-    home_games_played, home_games_idx = train_data.to_pandas().home_games_played.factorize()
-    away_games_played, away_games_idx = train_data.to_pandas().away_games_played.factorize()
+    home_games_played, home_games_idx = train_data.to_pandas().home_prev_games_played.factorize()
+    away_games_played, away_games_idx = train_data.to_pandas().away_prev_games_played.factorize()
     
     # Extract feature arrays
     home_perc = train_data["home_team_prev_percentage"].to_numpy()

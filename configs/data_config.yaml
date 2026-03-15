@@ -2,16 +2,16 @@ raw_data_scrape:
   tables: ["ladder", "results"]
   ladder:
     data_loc: "raw/ladder"
-    year_lb: 2026
-    year_ub: 2026
+    year_lb: 2025
+    year_ub: 2025
     round_lb: 1
-    round_ub: 1
+    round_ub: 25
   results:
     data_loc: "raw/results"
-    year_lb: 2026
-    year_ub: 2026
+    year_lb: 2025
+    year_ub: 2025
     round_lb: 1
-    round_ub: 1
+    round_ub: 25
 modelling:
   model_type: "multilevel"  # Options: "bayesian" or "multilevel"  
   ladder_path: "data/dev/raw/ladder"

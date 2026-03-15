@@ -237,10 +237,6 @@ def add_games_played_features(
             games_played=pl.col("games_count").cum_sum().over("Season", "Team")
         )
         .select("Season", "Round.Number", "Team", "games_played")
-        # Add 1 to round.number to reflect games played up to the current round (not including current round)
-        .with_columns(
-            pl.col("Round.Number") + 1
-        )
     )
     
     # Create a vector of all rounds (1-25) and cross join with all teams/seasons
@@ -263,6 +259,15 @@ def add_games_played_features(
             games_played=pl.col("games_played")
             .fill_null(strategy="forward")
             .over(["Season", "Team"])
+            .fill_null(0)
+        )
+        # Create lagged games_played_prev column (games played before current round)
+        .with_columns(
+            games_played_prev=
+            pl.col("games_played")
+            .shift()
+            .over(["Season", "Team"])
+            .fill_null(0)
         )
     )
     
@@ -272,7 +277,10 @@ def add_games_played_features(
         left_on=["Season", "Round.Number", "Home.Team"],
         right_on=["Season", "Round.Number", "Team"],
         how="left",
-    ).rename({"games_played": "home_games_played"})
+    ).rename({
+        "games_played": "home_games_played",
+        "games_played_prev": "home_prev_games_played"
+    })
     
     # Join for away team
     feature_df = feature_df.join(
@@ -280,7 +288,10 @@ def add_games_played_features(
         left_on=["Season", "Round.Number", "Away.Team"],
         right_on=["Season", "Round.Number", "Team"],
         how="left",
-    ).rename({"games_played": "away_games_played"})
+    ).rename({
+        "games_played": "away_games_played",
+        "games_played_prev": "away_prev_games_played"
+    })
     
     return feature_df
 
@@ -369,7 +380,7 @@ def prepare_test_data(
                 "percentage": "home_team_prev_percentage",
                 "total_wins": "home_prev_total_wins",
                 "total_loss": "home_prev_total_loss",
-                "games_played": "home_games_played",
+                "games_played": "home_prev_games_played",
             }
         )
         .join(
@@ -380,7 +391,7 @@ def prepare_test_data(
                 "percentage": "away_team_prev_percentage",
                 "total_wins": "away_prev_total_wins",
                 "total_loss": "away_prev_total_loss",
-                "games_played": "away_games_played",
+                "games_played": "away_prev_games_played",
             }
         )
         .with_columns(
